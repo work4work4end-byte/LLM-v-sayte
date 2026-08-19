@@ -114,7 +114,7 @@ cd C:\Users\Pehanet25\kontrol-materialov-hermes
 git init
 git add .
 git commit -m "Initial Hermes integration for kontrol-materialov"
-git remote add origin https://github.com/work4work4end-byte/kontrol-materialov-hermes.git
+git remote add origin https://github.com/work4work4end-byte/LLM-v-sayte.git
 git push -u origin main
 ```
 
