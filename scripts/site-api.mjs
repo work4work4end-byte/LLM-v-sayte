@@ -26,12 +26,14 @@ function usage() {
   node scripts/site-api.mjs health
   node scripts/site-api.mjs summary --telegram-id <id>
   node scripts/site-api.mjs projects --telegram-id <id>
+  node scripts/site-api.mjs folders --telegram-id <id>
+  node scripts/site-api.mjs folder-overview --telegram-id <id> --folder-id <id>
   node scripts/site-api.mjs project-overview --telegram-id <id> --project-id <id>
-  node scripts/site-api.mjs materials --telegram-id <id> [--search X] [--section X] [--period week|month] [--offset 0|1] [--aggregate]
-  node scripts/site-api.mjs deliveries --telegram-id <id> [--section X] [--period week] [--offset 1]
+  node scripts/site-api.mjs materials --telegram-id <id> [--search X] [--section X] [--folder-id N] [--project-id N] [--period week|month] [--offset 0|1] [--aggregate]
+  node scripts/site-api.mjs deliveries --telegram-id <id> [--section X] [--folder-id N] [--period week] [--offset 1]
   node scripts/site-api.mjs suppliers --telegram-id <id> [--search X]
   node scripts/site-api.mjs supplier-materials --telegram-id <id> --supplier-id <id>
-  node scripts/site-api.mjs problems --telegram-id <id> [--project-id X] [--type X]
+  node scripts/site-api.mjs problems --telegram-id <id> [--project-id X] [--folder-id N] [--type X]
 `);
   process.exit(1);
 }
@@ -85,6 +87,18 @@ async function main() {
       console.log(JSON.stringify(await callSiteApi('projects', { siteUserId }), null, 2));
       return;
     }
+    if (cmd === 'folders') {
+      console.log(JSON.stringify(await callSiteApi('folders', { siteUserId }), null, 2));
+      return;
+    }
+    if (cmd === 'folder-overview') {
+      if (!args['folder-id']) usage();
+      console.log(JSON.stringify(await callSiteApi('folder_overview', {
+        siteUserId,
+        folderId: args['folder-id'],
+      }), null, 2));
+      return;
+    }
     if (cmd === 'project-overview') {
       if (!args['project-id']) usage();
       console.log(JSON.stringify(await callSiteApi('project_overview', {
@@ -95,14 +109,14 @@ async function main() {
     }
     if (cmd === 'materials') {
       const query = pickQuery(args, [
-        'search', 'section', 'supplier', 'status', 'project_id',
+        'search', 'section', 'supplier', 'status', 'project_id', 'folder_id',
         'period', 'offset', 'delivery_from', 'delivery_to', 'order_from', 'order_to',
       ]);
       console.log(JSON.stringify(await callSiteApi('materials', { siteUserId, query }), null, 2));
       return;
     }
     if (cmd === 'deliveries') {
-      const query = pickQuery(args, ['section', 'project_id', 'period', 'offset', 'delivery_from', 'delivery_to']);
+      const query = pickQuery(args, ['section', 'project_id', 'folder_id', 'period', 'offset', 'delivery_from', 'delivery_to']);
       if (!query.period && !query.delivery_from) {
         query.period = 'week';
         query.offset = query.offset ?? '1';
@@ -126,7 +140,7 @@ async function main() {
       return;
     }
     if (cmd === 'problems') {
-      const query = pickQuery(args, ['project_id', 'severity', 'type']);
+      const query = pickQuery(args, ['project_id', 'folder_id', 'severity', 'type']);
       console.log(JSON.stringify(await callSiteApi('problems', { siteUserId, query }), null, 2));
       return;
     }

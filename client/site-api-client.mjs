@@ -25,6 +25,8 @@ const OPERATIONS = {
   health: { method: 'GET', path: '/api/agent/health', needsUser: false },
   summary: { method: 'GET', path: '/api/agent/summary', needsUser: true },
   projects: { method: 'GET', path: '/api/agent/projects', needsUser: true },
+  folders: { method: 'GET', path: '/api/agent/folders', needsUser: true },
+  folder_overview: { method: 'GET', path: '/api/agent/folders/{id}/overview', needsUser: true, idKey: 'folderId' },
   project_overview: { method: 'GET', path: '/api/agent/projects/{id}/overview', needsUser: true, idKey: 'projectId' },
   materials: { method: 'GET', path: '/api/agent/materials', needsUser: true, query: true },
   deliveries: { method: 'GET', path: '/api/agent/deliveries', needsUser: true, query: true },
@@ -193,6 +195,7 @@ export async function callSiteApi(operation, {
   siteUserId = null,
   projectId = null,
   supplierId = null,
+  folderId = null,
   query = {},
 } = {}) {
   const spec = OPERATIONS[operation];
@@ -204,7 +207,7 @@ export async function callSiteApi(operation, {
     throw new Error(`Операция ${operation} требует site_user_id`);
   }
 
-  const urlPath = buildPath(operation, { projectId, supplierId });
+  const urlPath = buildPath(operation, { projectId, supplierId, folderId });
   const url = `${baseUrl}${urlPath}${spec.query ? buildQueryString(query) : ''}`;
 
   const headers = {

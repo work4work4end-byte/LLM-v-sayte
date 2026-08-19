@@ -5,7 +5,7 @@ description: >-
   суммы, поставщики, разделы сметы, просрочки, работы, задачи. Используй при
   вопросах о строительных объектах, материалах, сроках поставки, количестве,
   стоимости, поставщиках, просрочках и задачах в kontrol-materialov.
-version: 0.2.0
+version: 0.3.0
 platforms: [windows, linux, macos]
 metadata:
   hermes:
@@ -54,6 +54,23 @@ required_environment_variables:
 ```
 
 Hermes отвечает **только по данным сайта**, глазами пользователя, который написал в Telegram. **Редактирование запрещено.**
+
+## Объект vs смета (важно)
+
+На сайте два уровня:
+
+| Уровень | На сайте | В API |
+|---------|----------|-------|
+| **Объект (папка)** | Папка с несколькими сметами | `folders`, `folder_id`, `folder_name` |
+| **Смета** | Отдельная смета / project | `projects`, `project_id`, `estimates` |
+
+**«Объект» для пользователя = обычно папка.** Если в папке 3 сметы — это **один объект**, не три.
+
+Алгоритм:
+1. Вопрос про **объект** → `folders` или `folder-overview --folder-id N`
+2. Вопрос про **конкретную смету** → `project-overview --project-id N`
+3. Материалы/просрочки по **всем сметам объекта** → `--folder-id N`
+4. Смета **без папки** → `standalone_estimates` / `standalone_projects`
 
 Рабочая папка CLI: `/mnt/c/Users/Pehanet25/kontrol-materialov-hermes`
 
@@ -116,8 +133,10 @@ node scripts/site-api.mjs summary --telegram-id 458969653
 |---------|-------|
 | `health` | Проверка связи |
 | `summary` | Общая сводка, просрочки |
-| `projects` | Список объектов |
-| `project-overview --project-id N` | Один объект целиком |
+| `folders` | **Объекты-папки** и сметы внутри |
+| `folder-overview --folder-id N` | Один объект (все сметы в папке) |
+| `projects` | Все сметы + связи `folder_id` / `folder_name` |
+| `project-overview --project-id N` | Одна смета целиком |
 | `materials` | Поиск материалов, суммы, фильтры |
 | `deliveries` | Что **приедет** в период (неделя/месяц), по разделам |
 | `suppliers --search X` | Найти поставщика |
@@ -129,10 +148,13 @@ node scripts/site-api.mjs summary --telegram-id 458969653
 ### Общее
 | Вопрос пользователя | CLI |
 |---------------------|-----|
-| Сколько объектов? Как дела? | `summary` |
+| Сколько объектов? Как дела? | `summary` (поле `folders_count`) |
 | Какие просрочки? | `summary` или `problems` |
-| Список объектов | `projects` |
-| Что на объекте X? | `projects` → `project-overview --project-id ID` |
+| Список **объектов** (папок) | `folders` |
+| Что на **объекте** X? | `folders` → `folder-overview --folder-id ID` |
+| Список всех смет | `projects` |
+| Что на **смете** Y? | `project-overview --project-id ID` |
+| Просрочки по объекту X | `problems --folder-id ID` |
 
 ### Материалы, количество, суммы
 | Вопрос | CLI |
@@ -142,6 +164,7 @@ node scripts/site-api.mjs summary --telegram-id 458969653
 | Сколько на **след. неделю**? | `materials --search пеноплекс --period week --offset 1 --aggregate` |
 | **Сумма** / стоимость материала | `materials --search X --aggregate` → поля `purchase_cost_total`, `estimate_cost_total` |
 | Материалы раздела **фундамент** | `materials --section фундамент` |
+| Материалы по **объекту** (все сметы) | `materials --folder-id N --search X` |
 
 ### Поставки по времени и разделам
 | Вопрос | CLI |
@@ -164,7 +187,7 @@ node scripts/site-api.mjs summary --telegram-id 458969653
 - **Человеческим языком**, без JSON.
 - Указывай **время актуальности** из `generated_at`.
 - Если `count: 0` — «по вашим объектам таких данных нет», не выдумывай.
-- Если объект неоднозначен — перечисли варианты из `projects`.
+- Если объект неоднозначен — перечисли варианты из `folders` (папки) или `standalone_estimates`.
 - Суммы: «закупка X ₽, смета Y ₽» — только если поля не null.
 - Количество: «500 м», «120 лист» — из `quantity` + `unit`.
 - Если `truncated: true` — скажи «показаны первые N, уточните объект или период».
