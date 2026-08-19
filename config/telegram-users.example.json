@@ -1,0 +1,15 @@
+{
+  "_comment": "Скопируйте в config/telegram-users.json и заполните. Telegram ID узнайте через @userinfobot",
+  "users": {
+    "123456789": {
+      "site_user_id": 1,
+      "username": "admin",
+      "display_name": "Администратор"
+    },
+    "987654321": {
+      "site_user_id": 3,
+      "username": "manager1",
+      "display_name": "Менеджер 1"
+    }
+  }
+}

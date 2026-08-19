@@ -1,0 +1,15 @@
+{
+  "name": "kontrol-materialov-hermes",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Hermes skill and read-only client for Kontrol Materialov site API",
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "api": "node scripts/site-api.mjs",
+    "check-mapping": "node scripts/check-mapping.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
