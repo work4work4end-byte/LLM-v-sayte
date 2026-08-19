@@ -7,6 +7,7 @@
   "scripts": {
     "test": "node --test tests/*.test.js",
     "api": "node scripts/site-api.mjs",
+    "sync:hermes-env": "node scripts/sync-hermes-env.mjs",
     "check-mapping": "node scripts/check-mapping.mjs"
   },
   "engines": {

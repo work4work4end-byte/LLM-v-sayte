@@ -18,6 +18,9 @@ test('OPERATIONS — только GET', () => {
   for (const [name, spec] of Object.entries(OPERATIONS)) {
     assert.equal(spec.method, 'GET', `${name} must be GET`);
   }
+  assert.ok(OPERATIONS.materials);
+  assert.ok(OPERATIONS.deliveries);
+  assert.ok(OPERATIONS.suppliers);
 });
 
 test('resolveSiteUser — находит пользователя', () => {
@@ -39,7 +42,7 @@ test('tokensEqual', () => {
   assert.equal(tokensEqual('abc', 'ab'), false);
 });
 
-test('getClientConfig — отклоняет неразрешённый URL', () => {
+test('getClientConfig — отклоняет неразрешённый публичный URL', () => {
   process.env.SITE_API_BASE_URL = 'http://evil.example.com:3001';
   process.env.AGENT_API_TOKEN = 'test-token';
   assert.throws(() => getClientConfig(), /не разрешён/);
@@ -47,11 +50,29 @@ test('getClientConfig — отклоняет неразрешённый URL', ()
   delete process.env.AGENT_API_TOKEN;
 });
 
-test('getClientConfig — принимает localhost', () => {
-  process.env.SITE_API_BASE_URL = 'http://127.0.0.1:3001';
+test('getClientConfig — принимает production VPS', () => {
+  process.env.SITE_API_BASE_URL = 'http://85.193.88.201';
   process.env.AGENT_API_TOKEN = 'test-token';
   const cfg = getClientConfig();
-  assert.equal(cfg.baseUrl, 'http://127.0.0.1:3001');
+  assert.equal(cfg.baseUrl, 'http://85.193.88.201');
+  delete process.env.SITE_API_BASE_URL;
+  delete process.env.AGENT_API_TOKEN;
+});
+
+test('getClientConfig — принимает VPS с явным портом 80', () => {
+  process.env.SITE_API_BASE_URL = 'http://85.193.88.201:80';
+  process.env.AGENT_API_TOKEN = 'test-token';
+  const cfg = getClientConfig();
+  assert.equal(cfg.baseUrl, 'http://85.193.88.201');
+  delete process.env.SITE_API_BASE_URL;
+  delete process.env.AGENT_API_TOKEN;
+});
+
+test('getClientConfig — принимает локальный private IP', () => {
+  process.env.SITE_API_BASE_URL = 'http://172.22.32.1:3001';
+  process.env.AGENT_API_TOKEN = 'test-token';
+  const cfg = getClientConfig();
+  assert.equal(cfg.baseUrl, 'http://172.22.32.1:3001');
   delete process.env.SITE_API_BASE_URL;
   delete process.env.AGENT_API_TOKEN;
 });

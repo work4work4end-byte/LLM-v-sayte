@@ -1,18 +1,8 @@
 #!/usr/bin/env node
-/**
- * CLI для Hermes: read-only запросы к сайту «Контроль материалов».
- *
- * Примеры:
- *   node scripts/site-api.mjs health
- *   node scripts/site-api.mjs summary --telegram-id 123456789
- *   node scripts/site-api.mjs projects --site-user-id 3
- *   node scripts/site-api.mjs project-overview --telegram-id 123456789 --project-id 5
- */
-
 import { callSiteApi, resolveSiteUser } from '../client/site-api-client.mjs';
 
 function parseArgs(argv) {
-  const args = { _: [] };
+  const args = { _: [], query: {} };
   for (let i = 0; i < argv.length; i += 1) {
     const a = argv[i];
     if (a.startsWith('--')) {
@@ -34,9 +24,14 @@ function parseArgs(argv) {
 function usage() {
   console.error(`Usage:
   node scripts/site-api.mjs health
-  node scripts/site-api.mjs summary --telegram-id <id> | --site-user-id <id>
-  node scripts/site-api.mjs projects --telegram-id <id> | --site-user-id <id>
-  node scripts/site-api.mjs project-overview --project-id <id> [--telegram-id <id> | --site-user-id <id>]
+  node scripts/site-api.mjs summary --telegram-id <id>
+  node scripts/site-api.mjs projects --telegram-id <id>
+  node scripts/site-api.mjs project-overview --telegram-id <id> --project-id <id>
+  node scripts/site-api.mjs materials --telegram-id <id> [--search X] [--section X] [--period week|month] [--offset 0|1] [--aggregate]
+  node scripts/site-api.mjs deliveries --telegram-id <id> [--section X] [--period week] [--offset 1]
+  node scripts/site-api.mjs suppliers --telegram-id <id> [--search X]
+  node scripts/site-api.mjs supplier-materials --telegram-id <id> --supplier-id <id>
+  node scripts/site-api.mjs problems --telegram-id <id> [--project-id X] [--type X]
 `);
   process.exit(1);
 }
@@ -56,6 +51,15 @@ function resolveUserId(args) {
   return null;
 }
 
+function pickQuery(args, keys) {
+  const query = {};
+  for (const key of keys) {
+    if (args[key] != null && args[key] !== true) query[key] = args[key];
+  }
+  if (args.aggregate) query.aggregate = '1';
+  return query;
+}
+
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   const cmd = args._[0];
@@ -63,8 +67,7 @@ async function main() {
 
   try {
     if (cmd === 'health') {
-      const data = await callSiteApi('health');
-      console.log(JSON.stringify(data, null, 2));
+      console.log(JSON.stringify(await callSiteApi('health'), null, 2));
       return;
     }
 
@@ -83,18 +86,48 @@ async function main() {
       return;
     }
     if (cmd === 'project-overview') {
-      if (!args['project-id']) {
-        console.error('Нужен --project-id');
-        usage();
+      if (!args['project-id']) usage();
+      console.log(JSON.stringify(await callSiteApi('project_overview', {
+        siteUserId,
+        projectId: args['project-id'],
+      }), null, 2));
+      return;
+    }
+    if (cmd === 'materials') {
+      const query = pickQuery(args, [
+        'search', 'section', 'supplier', 'status', 'project_id',
+        'period', 'offset', 'delivery_from', 'delivery_to', 'order_from', 'order_to',
+      ]);
+      console.log(JSON.stringify(await callSiteApi('materials', { siteUserId, query }), null, 2));
+      return;
+    }
+    if (cmd === 'deliveries') {
+      const query = pickQuery(args, ['section', 'project_id', 'period', 'offset', 'delivery_from', 'delivery_to']);
+      if (!query.period && !query.delivery_from) {
+        query.period = 'week';
+        query.offset = query.offset ?? '1';
       }
-      console.log(JSON.stringify(
-        await callSiteApi('project_overview', {
-          siteUserId,
-          projectId: args['project-id'],
-        }),
-        null,
-        2,
-      ));
+      console.log(JSON.stringify(await callSiteApi('deliveries', { siteUserId, query }), null, 2));
+      return;
+    }
+    if (cmd === 'suppliers') {
+      const query = pickQuery(args, ['search', 'active']);
+      console.log(JSON.stringify(await callSiteApi('suppliers', { siteUserId, query }), null, 2));
+      return;
+    }
+    if (cmd === 'supplier-materials') {
+      if (!args['supplier-id']) usage();
+      const query = pickQuery(args, ['search', 'period', 'offset']);
+      console.log(JSON.stringify(await callSiteApi('supplier_materials', {
+        siteUserId,
+        supplierId: args['supplier-id'],
+        query,
+      }), null, 2));
+      return;
+    }
+    if (cmd === 'problems') {
+      const query = pickQuery(args, ['project_id', 'severity', 'type']);
+      console.log(JSON.stringify(await callSiteApi('problems', { siteUserId, query }), null, 2));
       return;
     }
 
